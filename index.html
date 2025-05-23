@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk News & AI Assistant</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0a0a1f;
+            color: #00ff9d;
+        }
+        .cyberpunk-border {
+            border: 2px solid #00ff9d;
+            box-shadow: 0 0 10px #00ff9d;
+        }
+        .cyberpunk-glow {
+            text-shadow: 0 0 5px #00ff9d;
+        }
+        .loading-animation {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .news-card:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 20px #00ff9d;
+        }
+    </style>
+</head>
+<body>
+    <div x-data="app()" class="min-h-screen p-4">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold cyberpunk-glow font-['Orbitron']">CYBER//NEWS_NET</h1>
+        </header>
+
+        <!-- Main Content -->
+        <div class="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- News Section -->
+            <div class="cyberpunk-border p-4 rounded-lg">
+                <h2 class="text-2xl mb-4 font-['Orbitron']">LATEST_FEEDS</h2>
+                
+                <!-- Loading State -->
+                <div x-show="newsLoading" class="loading-animation text-center p-4">
+                    <i class="bi bi-gear-wide-connected text-4xl animate-spin"></i>
+                    <p>ACCESSING_DATASTREAM...</p>
+                </div>
+
+                <!-- Error State -->
+                <div x-show="newsError" class="text-red-500 p-4">
+                    <p x-text="newsError"></p>
+                </div>
+
+                <!-- News Content -->
+                <div x-show="!newsLoading" class="space-y-4">
+                    <template x-for="article in news" :key="article.url">
+                        <div class="news-card cyberpunk-border p-4 rounded">
+                            <h3 x-text="article.title" class="text-xl mb-2"></h3>
+                            <p x-text="article.description" class="text-gray-400"></p>
+                            <a :href="article.url" target="_blank" class="text-cyan-400 hover:text-cyan-300 mt-2 inline-block">
+                                READ_MORE >>
+                            </a>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- AI Assistant Section -->
+            <div class="cyberpunk-border p-4 rounded-lg">
+                <h2 class="text-2xl mb-4 font-['Orbitron']">AI_ASSISTANT</h2>
+                
+                <div class="space-y-4">
+                    <!-- Chat Messages -->
+                    <div class="h-96 overflow-y-auto cyberpunk-border p-4 rounded">
+                        <template x-for="message in messages" :key="message.id">
+                            <div :class="message.role === 'user' ? 'text-right' : 'text-left'" class="mb-4">
+                                <div :class="message.role === 'user' ? 'bg-blue-900' : 'bg-green-900'" 
+                                     class="inline-block p-3 rounded cyberpunk-border">
+                                    <p x-text="message.content"></p>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="aiLoading" class="loading-animation">
+                            <i class="bi bi-cpu text-2xl"></i> PROCESSING...
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <form @submit.prevent="sendMessage" class="flex gap-2">
+                        <input type="text" 
+                               x-model="userInput" 
+                               class="flex-1 bg-gray-900 border-2 border-cyan-500 rounded p-2 text-cyan-300"
+                               placeholder="ENTER_MESSAGE//">
+                        <button type="submit" 
+                                class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded cyberpunk-border">
+                            SEND >>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function app() {
+            return {
+                news: [],
+                newsLoading: true,
+                newsError: null,
+                messages: [],
+                userInput: '',
+                aiLoading: false,
+
+                async init() {
+                    await this.fetchNews();
+                },
+
+                async fetchNews() {
+                    try {
+                        const response = await fetch('https://api.mediastack.com/v1/news?access_key=e5a33deb28a80c19b33b1d911f4bf0cb&languages=en&limit=10');
+                        if (!response.ok) throw new Error('News feed unavailable');
+                        const data = await response.json();
+                        this.news = data.data;
+                    } catch (error) {
+                        this.newsError = 'ERROR: ' + error.message;
+                    } finally {
+                        this.newsLoading = false;
+                    }
+                },
+
+                async sendMessage() {
+                    if (!this.userInput.trim()) return;
+
+                    const userMessage = {
+                        role: 'user',
+                        content: this.userInput,
+                        id: Date.now()
+                    };
+
+                    this.messages.push(userMessage);
+                    const messageText = this.userInput;
+                    this.userInput = '';
+                    this.aiLoading = true;
+
+                    try {
+                        const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/ai', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer qH1YZSz2jUSBzjFPVCHdaJ6dc0Y2',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                messages: [{
+                                    role: 'user',
+                                    content: [{
+                                        type: 'text',
+                                        text: messageText
+                                    }]
+                                }]
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('AI response error');
+                        
+                        const data = await response.json();
+                        this.messages.push({
+                            role: 'assistant',
+                            content: data.message,
+                            id: Date.now() + 1
+                        });
+                    } catch (error) {
+                        this.messages.push({
+                            role: 'assistant',
+                            content: 'ERROR: Unable to process request',
+                            id: Date.now() + 1
+                        });
+                    } finally {
+                        this.aiLoading = false;
+                    }
+                }
+            }
+        }
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
